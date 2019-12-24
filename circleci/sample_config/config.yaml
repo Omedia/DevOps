@@ -1,0 +1,27 @@
+# Given is the circle CIconfig. CircleCI is a cloud based service, so it seeks for this file in the project and executes everyting written here
+version: 2
+# Jobs is just a declaration of the further tasks
+jobs:
+# Build is always the first step, and it MUST be called "build"
+  build:
+# CircleCI is cloud based, so, all your code and steps are being executed inside of the contained, image of which is specified here
+    docker:
+      - image: wodby/php
+# Here you define steps, which you want circleCI to execute.
+    steps:
+      - checkout
+      - run:
+          name: install dependencies
+          command: |
+            composer install
+      - run:
+          name: install drupal coder
+          command: | 
+            composer global require drupal/coder
+      - run:
+          name: run PHPCS tests
+          command: |
+            bash ./.circleci/phpcs.sh
+
+# phpcs.sh is a script, which is being executed in the end.
+# To make sure that everything will work, remove all the comments above
