@@ -8,15 +8,15 @@ SERVER="$3"
 WEBROOT="$4"
 shift 4
 
-#wget https://dl.eff.org/certbot-auto && chmod a+x certbot-auto
-
-#./certbot-auto certonly --webroot -w /var/www/html/ -d $DN -d www.$DN -m $EMAIL
-
 if [ -z $DN  ]
 then
 echo "Syntax is: ./cert.sh DomainName Email Server(nginx/apache) Webroot"
 exit
 fi
+
+wget https://dl.eff.org/certbot-auto && chmod a+x certbot-auto
+
+./certbot-auto certonly --webroot -w /var/www/html/ -d $DN -d www.$DN -m $EMAIL
 
 if [ $SERVER == "nginx" ]
 then
@@ -64,6 +64,7 @@ then
 cd /etc/apache2/sites-available
 sudo a2dissite $DN.conf
 sudo a2enmod ssl
+sudo a2enmod rewrite
 sudo service apache2 reload
 sudo service apache2 stop
 sudo rm $DN.conf
@@ -77,7 +78,9 @@ echo "<VirtualHost *:80>
 RewriteEngine on
 RewriteBase /
 RewriteCond %{HTTP_HOST} ^$DN
-RewriteRule (.*) http://www.$DN/\$1 [R=301,L]
+RewriteRule (.*) https://$DN\$1 [R=301,L]
+RewriteCond %{HTTP_HOST} ^www.$DN
+RewriteRule (.*) https://www.$DN\$1 [R=301,L]
 </Directory>
 </VirtualHost>
 
@@ -91,10 +94,10 @@ RewriteRule (.*) http://www.$DN/\$1 [R=301,L]
         ServerName $DN
         ServerAlias www.$DN
         DocumentRoot /var/www/$WEBROOT
-        #SSLEngine On
-        #SSLCertificateFile "/etc/letsencrypt/live/$DN/cert.pem"
-        #SSLCertificateKeyFile "/etc/letsencrypt/live/$DN/privkey.pem"
-        #SSLCertificateChainFile "/etc/letsencrypt/live/$DN/chain.pem"
+        SSLEngine On
+        SSLCertificateFile "/etc/letsencrypt/live/$DN/cert.pem"
+        SSLCertificateKeyFile "/etc/letsencrypt/live/$DN/privkey.pem"
+        SSLCertificateChainFile "/etc/letsencrypt/live/$DN/chain.pem"
 </VirtualHost>" > $DN.conf
 
 
