@@ -10,17 +10,23 @@ shift 4
 
 if [ -z $DN  ]
 then
-echo "Syntax is: ./cert.sh DomainName Email Server(nginx/apache) Webroot"
+echo "Syntax is: ./cert.sh DomainName Email Server(nginx/apache) Webroot(/var/www/Webroot)"
 exit
 fi
 
 wget https://dl.eff.org/certbot-auto && chmod a+x certbot-auto
 
-./certbot-auto certonly --webroot -w /var/www/html/ -d $DN -d www.$DN -m $EMAIL
+./certbot-auto certonly --webroot -w /var/www/$WEBROOT -d $DN -d www.$DN -m $EMAIL
 
 if [ $SERVER == "nginx" ]
 then
   cd /etc/nginx/sites-available
+  sudo rm ../sites-enabled/$DN.conf
+  sudo service nginx reload
+  sudo service nginx stop
+  sudo rm $DN.conf
+  sudo rm ../sites-enabled/$DN.conf
+  sudo service nginx start
   echo "server {
     listen 80;
 
@@ -42,19 +48,12 @@ server {
     root /var/www/$WEBROOT;
 
     location / {
-        try_files \$uri /index.php?\$args;
+        try_files \$uri /index.html?\$args;
 }
 
-    location ~ \.php$ {
-        try_files \$uri =404;
-        fastcgi_split_path_info ^(.+\.php)(/.+)$;
-        fastcgi_pass unix:/run/php/php7.0-fpm.sock;
-        fastcgi_index index.php;
-        include fastcgi_params;
-    }
 }" > $DN.conf
 
-sudo ln -s $DN.conf ../sites-enabled/
+sudo ln -s /etc/nginx/sites-available/$DN.conf /etc/nginx/sites-enabled/$DN.conf
 
 sudo service nginx reload
 fi
